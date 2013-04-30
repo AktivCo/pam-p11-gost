@@ -1,6 +1,7 @@
 /*
- * libp11 PAM Login Module
+ * PKCS#11 PAM Login Module with support for GOST algorithms
  * Copyright (C) 2003 Mario Strasser <mast@gmx.net>,
+ * modified by Kirill Romanovskiy <romanovskiy.k@gmail.com>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -25,17 +26,12 @@
 #include <dlfcn.h>
 #include <stddef.h>
 
-#include <openssl/bio.h>
-#include <openssl/err.h>
 #include <openssl/engine.h>
-#include <openssl/pem.h>
 #include <openssl/x509.h>
-#include <openssl/x509v3.h>
 
-#include "pkcs11/rtpkcs11.h"
+#include <pkcs11/rtpkcs11.h>
 #include "pam_helper.h"
 
-/* We have to make this definitions before we include the pam header files! */
 #define PAM_SM_AUTH
 #define PAM_SM_ACCOUNT
 #define PAM_SM_SESSION
@@ -52,7 +48,7 @@
 #define PAM_EXTERN extern
 #endif
 
-#define LOGNAME   "pam_p11" /* name for log-file entries */
+#define LOGNAME "pam-p11-gost" 
 
 #define RANDOM_SOURCE "/dev/urandom"
 #define RANDOM_SIZE 128
@@ -83,10 +79,8 @@ const CK_ULONG kMaxObjectCount = 100;
 
 #define numof(arr)  (sizeof(arr) / sizeof((arr)[0]))
 
-
 PAM_EXTERN int pam_sm_authenticate(pam_handle_t* pamh, int flags, int argc, const char** argv)
 {
-	printf("authenticating via PAM-PKCS#11-GOST\n");
 	int rv = -1;
 	const char* user;
 	char* pin;
@@ -138,7 +132,6 @@ PAM_EXTERN int pam_sm_authenticate(pam_handle_t* pamh, int flags, int argc, cons
 	CRYPTO_malloc_init();
 	CRYPTO_mem_ctrl(CRYPTO_MEM_CHECK_ON);
 #endif
-	ERR_load_crypto_strings();
 	ENGINE_load_builtin_engines();
 	gostEngine = ENGINE_by_id("gost");
 	if (!gostEngine) {
@@ -447,7 +440,7 @@ PAM_EXTERN int pam_sm_chauthtok(pam_handle_t* pamh, int flags, int argc,
 #ifdef PAM_STATIC
 /* static module data */
 struct pam_module _pam_group_modstruct = {
-	"pam_p11",
+	"pam-p11-gost",
 	pam_sm_authenticate,
 	pam_sm_setcred,
 	pam_sm_acct_mgmt,
