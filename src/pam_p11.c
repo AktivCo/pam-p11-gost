@@ -371,7 +371,10 @@ PAM_EXTERN int pam_sm_authenticate(pam_handle_t* pamh, int flags, int argc, cons
 		pam_syslog(pamh, LOG_ERR, "EVP_VerifyFinal failed");
 		goto pkcs11SessionFinish;
 	}
-	rv = PAM_SUCCESS;
+	if (rv == 1)
+		rv = PAM_SUCCESS;
+	else 
+		rv = PAM_AUTH_ERR;
 
 pkcs11SessionFinish:
 	pkcs->C_CloseSession(session);
